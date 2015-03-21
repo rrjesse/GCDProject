@@ -1,0 +1,196 @@
+
+The goal of the run_analysis.R script was to clean up a data set and present two different tidy data sets from the original.
+
+The data set that was used:
+
+==================================================================
+Human Activity Recognition Using Smartphones Dataset
+Version 1.0
+==================================================================
+Jorge L. Reyes-Ortiz, Davide Anguita, Alessandro Ghio, Luca Oneto.
+Smartlab - Non Linear Complex Systems Laboratory
+DITEN - Università degli Studi di Genova.
+Via Opera Pia 11A, I-16145, Genoa, Italy.
+activityrecognition@smartlab.ws
+www.smartlab.ws
+==================================================================
+
+The specific information regarding these data sets are appended to the end of this codebook for reference purposes.
+
+
+
+To begin, the data were downloaded from:
+
+https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip 
+
+When unzipped several data and information files were found, which are described in detail in the appendix.
+
+	x_train.txt and x_test.txt contain the movement data from the accelerometer and gyroscope
+	y_train.txt and y_test.txt contain the corresponding activity for the movement data
+	subject_train.txt and subject_test.txt contain the subject id that performed the activities
+	features.txt contain the column headings for all the movement data collected (561 columns in total)
+
+	There were 30 subjects and 6 activities (walking, walking upstairs, walking downstairs, sitting, standing, laying)
+	All subjects performed all activities.
+
+The project tasks are outlined below.
+
+	Create an R script called run_analysis.R that does the following: 
+
+	1. Merges the training and the test sets to create one data set.
+	2. Extracts only the measurements on the mean and standard deviation for each measurement. 
+	3. Uses descriptive activity names to name the activities in the data set
+	4. Appropriately labels the data set with descriptive variable names. 
+	5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for 
+	   each activity and each subject.
+
+The submitted run_analysis.R script does all these tasks, but not necessarily in the same order.
+
+First the data files, were read into R with read.table().
+	x_test.txt named x_test
+	y_test.txt named y_test
+	subject_test.txt named subject_test
+	x_train.txt named x_train
+	y_train.txt named y_train
+	subject_train.txt named subject_train
+	features.txt named features
+
+It was noticed that the first cell of each of the "y" and "subject" data frames had a corrupted character.  Since the first several rows of these files contained the same value, the problem was fixed by replacing the first row with the character from the second row.  This procedure performed on the y_test data frame is shown below as an example:
+
+        n <- y_test[2,1]
+        y_test[1,1] <- n
+
+The next step was to deterine which columns were relevant to include in the final data sets.  Task 2 specified that only
+the meaurements on the mean and standard deviation should be included.  The "features.txt" file was opened outside of R to
+evaluate the names of the column headings.  It was determined that the column headings which contained the exact strings
+"mean()" and "std()" were the columns of data that should be kept.  The features.txt file contains two columns of data: the first row was a numeric value counting the data column sequentially and the second contained the column name as a factor.
+
+In the R script grep() was used on the second column of "features" to give two vectors, "mean_rows" and "std_rows", containing
+the relevant column numbers.  These two vectors were joined into "col2xtract" and sorted into ascending order. A total of 66 out of 541 were kept using these criteria.  The unnecessary columns were dropped from "x_test" and "x_train" by subsetting the columns using col2xtract.  The extracted data files were named "x_test2" and "x_train2", respectively.
+
+The next step was to join the "subject_test", "y_test", and "x_test2" using cbind().  This file was named "testdata".  The 
+same procedure was done for the train data, and that file was named "traindata".  These two files were then joined with 
+rbind() to obtain one data set, named "motion_data", containing the subject ID, motion activity, and the relevant data both 
+data sets.  
+
+The "features" object was used to make a vector of column headings for the "motion_data" data frame.  First, the column names in the second column of "features" was changed from factor to character.  Then the relevant column names were extracted using the "col2xtract" vector and saved to "data_names".  The column names for the first two columns, "Subject_ID" and "Activity" were concatenated with "data_names" to form a vector with all the column names, which was named "col_names".  The column names
+were added to "motion_data" using this newly made "col_names" vector.
+
+To complete the last few steps, the Subject_ID column was changed to be numeric and the Activity column was changed to
+character.  A for loop was used to change the activity number into a descriptive activity label.  The "activity_labels.txt"
+file from the original downloaded data indicated which number referred to which activity.  For example, activity 1 was walking. The for loop in the script loops through each cell of the Activity column to determine which activity label belongs there.  If number 1 is in the cell, it is replaced with "walking" and so on with the other 5 activities. 
+
+dplyr functions are used in some of the last steps; therefore, a library call to dply is employed, and the motion_data is written into the dplyr form with tbl_df().  The data is arranged a little more neatly based on increasing Subject_ID and Activity and is named "motion_info".  This represents the tidy data requested for part 4 in the assignment.  It is saved to a text file named "motion_part4.txt".
+
+The final tidy data set is formed by grouping "motion_into" by "Subject_ID" and "Activity" using group_by().  The means of the data columns for each "Subject_ID" and "Activity" are found by using summarise_each() on the grouped motion data.  This tidy data set is named "motion_summary" and is saved as a text file and named "motion_part5.txt".
+
+
+Glossary of Terms
+
+x_test	: R object containing original test data
+x_test.txt  : original test data
+y_test  : R object containing Activities for test data
+y_test.txt  : Activities corresponding to test data
+subject_test  : R object containing subject ID's of test data
+subject_test.txt  : subject ID's corresponding to test data
+x_train  : R object containing original train data
+x_train.txt  : original train data
+y_train  : R object containing Activities for train data
+y_train.txt  : Activities corresponding to train data
+subject_train  : R object containing subject ID's of train data
+subject_train.txt  : subject ID's corresponding to train data
+features  :  An R object containing column numbers and headings for both test and train data
+features.txt:  Original data of column numbers and headings for both test and train data
+mean_rows  : The row numbers of "features" that contain the string "mean()"
+std_rows  : The row numbers of "features" that contain the string "std()"
+col2xtract  : An R object of a vector of column numbers to extract from the original test and train data
+x_test2  :  R object containing test data with the data columns of interest
+x_train2  :  R object containing train data with the data columns of interest
+testdata  :  R object with subject_test, y_test and x_test2 joined together
+traindata  :  R object with subject_train, y_train and x_train2 joined together
+motion_data  :  R dataframe with testdata and traindata joined together
+data_names  :  column headings for the data columns only
+col_names  :  column headings for all columns in motion_data 
+md  :  motion_data saved with tbl_df()
+motion_info  :  md sorted for Subject_ID and Activity
+motion_part4.txt  :  Text file of part 4 data
+motion_grouped  :  motion_info grouped by Subject_ID and Activity
+motion_summary  :  motion_grouped summarized for all the means of the data columns
+motion_part5.txt  :  Text file of part 5 data
+
+
+
+
+APPENDIX - Data Information
+
+==================================================================
+Human Activity Recognition Using Smartphones Dataset
+Version 1.0
+==================================================================
+Jorge L. Reyes-Ortiz, Davide Anguita, Alessandro Ghio, Luca Oneto.
+Smartlab - Non Linear Complex Systems Laboratory
+DITEN - Università degli Studi di Genova.
+Via Opera Pia 11A, I-16145, Genoa, Italy.
+activityrecognition@smartlab.ws
+www.smartlab.ws
+==================================================================
+
+
+The experiments have been carried out with a group of 30 volunteers within an age bracket of 19-48 years. Each person performed six activities (WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING) wearing a smartphone (Samsung Galaxy S II) on the waist. Using its embedded accelerometer and gyroscope, we captured 3-axial linear acceleration and 3-axial angular velocity at a constant rate of 50Hz. The experiments have been video-recorded to label the data manually. The obtained dataset has been randomly partitioned into two sets, where 70% of the volunteers was selected for generating the training data and 30% the test data. 
+
+The sensor signals (accelerometer and gyroscope) were pre-processed by applying noise filters and then sampled in fixed-width sliding windows of 2.56 sec and 50% overlap (128 readings/window). The sensor acceleration signal, which has gravitational and body motion components, was separated using a Butterworth low-pass filter into body acceleration and gravity. The gravitational force is assumed to have only low frequency components, therefore a filter with 0.3 Hz cutoff frequency was used. From each window, a vector of features was obtained by calculating variables from the time and frequency domain. See 'features_info.txt' for more details. 
+
+For each record it is provided:
+======================================
+
+- Triaxial acceleration from the accelerometer (total acceleration) and the estimated body acceleration.
+- Triaxial Angular velocity from the gyroscope. 
+- A 561-feature vector with time and frequency domain variables. 
+- Its activity label. 
+- An identifier of the subject who carried out the experiment.
+
+The dataset includes the following files:
+=========================================
+
+- 'README.txt'
+
+- 'features_info.txt': Shows information about the variables used on the feature vector.
+
+- 'features.txt': List of all features.
+
+- 'activity_labels.txt': Links the class labels with their activity name.
+
+- 'train/X_train.txt': Training set.
+
+- 'train/y_train.txt': Training labels.
+
+- 'test/X_test.txt': Test set.
+
+- 'test/y_test.txt': Test labels.
+
+The following files are available for the train and test data. Their descriptions are equivalent. 
+
+- 'train/subject_train.txt': Each row identifies the subject who performed the activity for each window sample. Its range is from 1 to 30. 
+
+- 'train/Inertial Signals/total_acc_x_train.txt': The acceleration signal from the smartphone accelerometer X axis in standard gravity units 'g'. Every row shows a 128 element vector. The same description applies for the 'total_acc_x_train.txt' and 'total_acc_z_train.txt' files for the Y and Z axis. 
+
+- 'train/Inertial Signals/body_acc_x_train.txt': The body acceleration signal obtained by subtracting the gravity from the total acceleration. 
+
+- 'train/Inertial Signals/body_gyro_x_train.txt': The angular velocity vector measured by the gyroscope for each window sample. The units are radians/second. 
+
+Notes: 
+======
+- Features are normalized and bounded within [-1,1].
+- Each feature vector is a row on the text file.
+
+For more information about this dataset contact: activityrecognition@smartlab.ws
+
+License:
+========
+Use of this dataset in publications must be acknowledged by referencing the following publication [1] 
+
+[1] Davide Anguita, Alessandro Ghio, Luca Oneto, Xavier Parra and Jorge L. Reyes-Ortiz. Human Activity Recognition on Smartphones using a Multiclass Hardware-Friendly Support Vector Machine. International Workshop of Ambient Assisted Living (IWAAL 2012). Vitoria-Gasteiz, Spain. Dec 2012
+
+This dataset is distributed AS-IS and no responsibility implied or explicit can be addressed to the authors or their institutions for its use or misuse. Any commercial use is prohibited.
+
+Jorge L. Reyes-Ortiz, Alessandro Ghio, Luca Oneto, Davide Anguita. November 2012.
